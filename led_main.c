@@ -143,14 +143,12 @@ void initialize()
 
 void *on_leds()
 {
-    printf("LEDS ON");
     gpioWrite(GREEN_LED, 1);
     gpioWrite(RED_LED, 1);
 }
 
 void *off_leds()
 {
-    printf("LEDS OFF");
     gpioWrite(GREEN_LED, 0);
     gpioWrite(RED_LED, 0);
 }
@@ -159,7 +157,6 @@ void *blink_leds_2Hz()
 {
     while (arrToggleKillThread[0])
     {
-        printf("BOTH LED BLINKING AT SAME RATE \n");
         on_leds();
         usleep(250000);
         off_leds();
@@ -177,7 +174,6 @@ void *blink_red_8Hz()
 {
     while (arrToggleKillThread[1])
     {
-        printf("RED BLINKING 8HZ \n");
         gpioWrite(RED_LED, 1);
         usleep(62500);
         gpioWrite(RED_LED, 0);
@@ -195,7 +191,6 @@ void *blink_green_2Hz_reduced_brightness()
 {
     while (arrToggleKillThread[2])
     {
-        printf(". . . . . GREEN BLINKING 2HZ \n");
         gpioPWM(GREEN_LED, 63);
         usleep(250000);
         gpioWrite(GREEN_LED, 0);
