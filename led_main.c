@@ -41,13 +41,12 @@ int main()
         }
         else
         {
-            if (previousCommand == 2)
-            {
-                killThread(previousCommand);
-            }
-            if (previousCommand == 3)
-            {
-                killThread(previousCommand);
+            if (currentCommand == 0 || currentCommand == 1 || currentCommand == 2 || currentCommand == 3)   //if current command is valid,
+            {                                                                                               //and previous command is 2 OR 3,
+                if (previousCommand == 2 || previousCommand == 3)                                           //terminate previous thread by calling killThread()
+                {
+                    killThread(previousCommand);
+                }
             }
             switch (currentCommand) // creates a thread for the LED function. At the same time, still allows user's input for next instruction
             {
