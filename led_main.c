@@ -1,4 +1,4 @@
-/* gcc test.c -l pigpio -l pthread
+/* gcc led_main.c -l pigpio -l pthread
    sudo ./a.out */
 
 #include <stdio.h>
