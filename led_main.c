@@ -7,18 +7,19 @@
 #include <pthread.h>
 #include <pigpio.h>
 
-pthread_t blink_both, red_eight, green_reduce, end_prog;
-int arrToggleKillThread[] = {1, 1, 1}; // used for signalling to threads to end
-int currentCommand = -1;
-int previousCommand = -1;
+pthread_t blink_both, red_eight, green_reduce, end_prog; // thread IDs that will be associated to LED commands 2, 3 and endProgram()
+int arrToggleKillThread[] = {1, 1, 1};                   // Acts as a toggle or on/off switch. Used for signalling to threads to end and terminate itself
+int currentCommand = -1;                                 // stores the most recent VALID command by user
+int previousCommand = -1;                                // stores the previous command by user
 
 int GREEN_LED = 18; // pin number that LED is connected to
 int RED_LED = 19;   // pin number that LED is connected to
 
-int getUserCommand();
-void recordPreviousCommand(int command);
-void killThread(int command);
-void *endProgram(void *arg);
+int getUserCommand(); // gets user input
+
+void recordPreviousCommand(int command); // records previous command for thread killing purposes
+void killThread(int command);            // kills specified thread
+void *endProgram(void *arg);             // function to ensure all threads are terminated properly and LEDs are shut off before exiting program
 
 void initialize();
 void *on_leds();
@@ -41,40 +42,40 @@ int main()
         }
         else
         {
-            if (currentCommand == 0 || currentCommand == 1 || currentCommand == 2 || currentCommand == 3)   //if current command is valid,
-            {                                                                                               //and previous command is 2 OR 3,
-                if (previousCommand == 2 || previousCommand == 3)                                           //terminate previous thread by calling killThread()
+            if (currentCommand == 0 || currentCommand == 1 || currentCommand == 2 || currentCommand == 3) // If current command is valid,
+            {                                                                                             // and previous command is 2 OR 3,
+                if (previousCommand == 2 || previousCommand == 3)                                         // terminate previous thread by calling killThread()
                 {
                     killThread(previousCommand);
                 }
             }
-            switch (currentCommand) // creates a thread for the LED function. At the same time, still allows user's input for next instruction
+            switch (currentCommand) // executes LED functions and program commands based on user input. Or catches invalid commands by the default switch-case statement
             {
             case 0:
-                off_leds();
+                off_leds(); // calls function to turn off LEDs. No threading required
                 break;
             case 1:
-                on_leds();
+                on_leds(); // calls function to turn on LEDs. No threading required
                 break;
             case 2:
-                pthread_create(&blink_both, NULL, &blink_leds_2Hz, NULL);
-                break;
+                pthread_create(&blink_both, NULL, &blink_leds_2Hz, NULL); // creates a thread to blink both LEDs
+                break;                                                    // break to exit switch statement. Continues with repeating the do-while loop. Thus program continues asking for user's input while executing LED command concurrently
             case 3:
-                pthread_create(&red_eight, NULL, &blink_red_8Hz, NULL);
-                pthread_create(&green_reduce, NULL, &blink_green_2Hz_reduced_brightness, NULL);
-                break;
-            case 1234:
-                pthread_create(&end_prog, NULL, &endProgram, NULL);
-                pthread_join(end_prog, NULL); // waits for the endProgram thread to finish before exiting the program
+                pthread_create(&red_eight, NULL, &blink_red_8Hz, NULL);                         // creates a thread to blink red LED at 8 times per second
+                pthread_create(&green_reduce, NULL, &blink_green_2Hz_reduced_brightness, NULL); // creates a thread to blink green led at 2 times per second, with reduced brightness
+                break;                                                                          // break to exit switch statement, Continues with repeating the do-while loop. Thus program continues asking for user's input while executing LED command concurrently
+            case 1234:                                                                          // exit program
+                pthread_create(&end_prog, NULL, &endProgram, NULL);                             // creates a thread to esnure all LEDs are turned off and to terminate all threads
+                pthread_join(end_prog, NULL);                                                   // waits for the endProgram thread to finish before exiting the program
                 printf("\n Exiting program. . . . \n");
                 break;
-            default: // if user's input is not one of the listed commands
+            default: // if user's input is not one of the listed commands (or not a valid input)
                 printf("\n Please try again and input 0,1,2 or 3.\n");
                 break;
             }
         }
 
-    } while (currentCommand != 1234); // if user inputs 1234, program stops asking for user's input and exits program
+    } while (currentCommand != 1234); // if user inputs 1234, do-while loop stops and endProgram() is called
 
     return 0;
 }
@@ -89,21 +90,21 @@ void recordPreviousCommand(int command) // records the previous command for thre
 
 void killThread(int command) // terminates the specified command
 {
-    if (command == 2)
+    if (command == 2) // terminates LED command 2 (blink both LED at same rate)
     {
         arrToggleKillThread[0] = 0;     // sets the value in array of int to 0, acts as a toggle/signal for the LED functions to terminate it's while loop.
         pthread_join(blink_both, NULL); // waits for thread to end before continuing
     }
-    else if (command == 3)
+    else if (command == 3) // terminates LED command 3 (red at 8 times per second, green at 2 times per second with reduced brightness)
     {
-        arrToggleKillThread[1] = 0;       // same as above, acts as toggle
-        arrToggleKillThread[2] = 0;       // same as above, acts as toggle
+        arrToggleKillThread[1] = 0;       // sets the value in array of int to 0, acts as a toggle/signal for the LED functions to terminate it's while loop.
+        arrToggleKillThread[2] = 0;       // sets the value in array of int to 0, acts as a toggle/signal for the LED functions to terminate it's while loop.
         pthread_join(red_eight, NULL);    // waits for thread to end before continuing
         pthread_join(green_reduce, NULL); // waits for thread to end before continuing
     }
 }
 
-void *endProgram(void *arg) // function ensures all threads and leds are properly terminated/shut off properly
+void *endProgram(void *arg) // this function ensures all threads and leds are properly terminated/shut off properly
 {
     printf("\n Terminating processes, please wait for the program to end :) \n");
     if (previousCommand == 2 || previousCommand == 3) // if last command is 2 or 3, ensure thread(s) are properly terminated
